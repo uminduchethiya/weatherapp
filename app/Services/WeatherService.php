@@ -16,7 +16,7 @@ class WeatherService
         $this->apiKey = config('services.openweather.key')
             ?? throw new \RuntimeException('OpenWeather API key not configured.');
 
-        $this->baseUrl = config('services.openweather.endpoint', 'http://api.openweathermap.org/data/2.5/weather');
+        $this->baseUrl = config('services.openweather.endpoint');
     }
 
     /**
@@ -27,7 +27,8 @@ class WeatherService
      */
     public function getWeatherData(): array
     {
-        return Cache::remember('weather_data', 300, function () {
+        return Cache::remember('weather_data', 60, function () {
+            Log::info('Cache miss — fetching weather data from API');
             $cityCodes = $this->extractCityCodes();
             if (empty($cityCodes)) {
                 Log::warning('No city codes found for weather data.');
@@ -52,7 +53,7 @@ class WeatherService
                     Log::error("Exception fetching weather for city ID {$cityId}: {$e->getMessage()}");
                 }
 
-                usleep(200000); // 0.2 second delay to avoid hitting API too fast
+                usleep(200000);
             }
 
             return $weatherData;
