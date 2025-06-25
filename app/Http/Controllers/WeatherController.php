@@ -19,59 +19,33 @@ class WeatherController extends Controller
         $rawWeatherData = $this->weatherService->getWeatherData();
 
         $weatherData = collect($rawWeatherData)->map(function ($data) {
+            $timezoneOffset = $data['timezone'] ?? 0;
+
             return [
                 'city_name' => $data['name'] ?? 'Unknown',
+                'country' => $data['sys']['country'] ?? '',
                 'temperature' => round($data['main']['temp'] ?? 0, 1),
-                'weather_condition' => $data['weather'][0]['description'] ?? 'Unknown',
-                'weather_main' => $data['weather'][0]['main'] ?? 'Unknown',
+                'temp_min' => round($data['main']['temp_min'] ?? 0, 1),
+                'temp_max' => round($data['main']['temp_max'] ?? 0, 1),
                 'humidity' => $data['main']['humidity'] ?? 0,
                 'pressure' => $data['main']['pressure'] ?? 0,
-                'wind_speed' => $data['wind']['speed'] ?? 0,
-                'country' => $data['sys']['country'] ?? '',
+                'visibility' => $data['visibility'] ?? 0,
+                'description' => $data['weather'][0]['description'] ?? 'Unknown',
+                'weather_main' => $data['weather'][0]['main'] ?? 'Unknown',
                 'icon' => $data['weather'][0]['icon'] ?? '01d',
+                'wind_speed' => $data['wind']['speed'] ?? 0,
+                'wind_deg' => $data['wind']['deg'] ?? 0,
+                'wind_gust' => $data['wind']['gust'] ?? 0,
+                'sunrise' => isset($data['sys']['sunrise']) ? gmdate('H:i', $data['sys']['sunrise'] + $timezoneOffset) : 'N/A',
+                'sunset' => isset($data['sys']['sunset']) ? gmdate('H:i', $data['sys']['sunset'] + $timezoneOffset) : 'N/A',
+                'timezone' => 'UTC' . ($timezoneOffset >= 0 ? '+' : '') . ($timezoneOffset / 3600),
+                'local_time' => gmdate(' H:i', time() + $timezoneOffset),
                 'city_id' => $data['id'] ?? null,
-                'local_time' => isset($data['timezone']) && is_numeric($data['timezone'])
-                    ? gmdate('H:i', time() + $data['timezone'])
-                    : 'N/A',
             ];
         })->toArray();
 
         return view('weather', compact('weatherData'));
     }
 
-    public function clearCache()
-    {
-        Cache::forget('weather_data');
-        Cache::forget('weather_last_error');
-        return response()->json(['message' => 'Cache cleared']);
-    }
-
-    public function api()
-    {
-        $rawData = $this->weatherService->getWeatherData();
-
-        $weatherData = collect($rawData)->map(function ($data) {
-            return [
-                'city_name' => $data['name'] ?? 'Unknown',
-                'temperature' => round($data['main']['temp'] ?? 0, 1),
-                'weather_condition' => $data['weather'][0]['description'] ?? 'Unknown',
-                'weather_main' => $data['weather'][0]['main'] ?? 'Unknown',
-                'humidity' => $data['main']['humidity'] ?? 0,
-                'pressure' => $data['main']['pressure'] ?? 0,
-                'wind_speed' => $data['wind']['speed'] ?? 0,
-                'country' => $data['sys']['country'] ?? '',
-                'icon' => $data['weather'][0]['icon'] ?? '01d',
-                'city_id' => $data['id'] ?? null,
-                'local_time' => isset($data['timezone']) && is_numeric($data['timezone'])
-                    ? gmdate('H:i', time() + $data['timezone'])
-                    : 'N/A',
-            ];
-        })->toArray();
-
-        return response()->json([
-            'data' => $weatherData,
-            'cached' => Cache::has('weather_data'),
-            'error' => Cache::get('weather_last_error', 'No error'),
-        ]);
-    }
+   
 }

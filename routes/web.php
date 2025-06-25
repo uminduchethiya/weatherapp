@@ -1,13 +1,24 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
-
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\WeatherController;
-Route::get('/weather', [WeatherController::class, 'index'])->name('weather.index');
+use Auth0\Laravel\Controllers\LoginController;
+use Auth0\Laravel\Controllers\LogoutController;
+use Auth0\Laravel\Controllers\CallbackController;
 
-// API routes for weather
-Route::prefix('api')->group(function () {
-    Route::get('/weather', [WeatherController::class, 'api'])->name('api.weather');
-    Route::post('/weather/clear-cache', [WeatherController::class, 'clearCache'])->name('api.weather.clear-cache');
+// Redirect root to login to avoid state errors
+Route::get('/', function () {
+    return redirect()->route('login');
+});
+
+// Protected weather routes
+Route::middleware(['auth0'])->group(function () {
+    Route::get('/weather', [WeatherController::class, 'index'])->name('weather.index');
+});
+
+Route::middleware(['web'])->group(function () {
+    Route::get('/login', LoginController::class)->name('login');
+    Route::get('/callback', CallbackController::class)->name('auth0.callback');
+    Route::get('/logout', LogoutController::class)->name('logout');
 });
