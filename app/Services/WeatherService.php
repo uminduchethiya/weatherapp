@@ -27,7 +27,7 @@ class WeatherService
      */
     public function getWeatherData(): array
     {
-        return Cache::remember('weather_data', 60, function () {
+        return Cache::remember('weather_data', 500, function () {
             Log::info('Cache miss — fetching weather data from API');
             $cityCodes = $this->extractCityCodes();
             if (empty($cityCodes)) {
